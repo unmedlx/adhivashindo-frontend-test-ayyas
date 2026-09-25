@@ -31,6 +31,7 @@ export function BoardCanvas({ onTaskClick, onAddTask }: BoardCanvasProps) {
   return (
     <div
       style={{
+
         display: 'flex',
         flexDirection: 'row',
         gap: '16px',
@@ -42,6 +43,7 @@ export function BoardCanvas({ onTaskClick, onAddTask }: BoardCanvasProps) {
         WebkitOverflowScrolling: 'touch',
         // Hide scrollbar for cleaner look but keep functionality
         scrollbarWidth: 'thin',
+        minHeight: '100vh'
       }}
     >
       {state.columns.map((columnId) => {
