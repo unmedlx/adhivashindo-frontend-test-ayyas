@@ -33,6 +33,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       <IonToast
+      className="custom-toast"
         isOpen={toastState.isOpen}
         message={toastState.message}
         color={toastState.color}

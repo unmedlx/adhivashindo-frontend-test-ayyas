@@ -25,10 +25,10 @@ export function AvatarStack({ members, maxVisible = 4, size = 'normal', classNam
       ))}
       {remainingCount > 0 && (
         <div
-          className={`-ml-2 ${size === 'small' ? 'w-[22px] h-[22px] text-[9px]' : 'w-[28px] h-[28px] text-[11px]'} rounded-full flex items-center justify-center font-bold flex-none shadow-sm`}
+          className={`-ml-2 ${size === 'small' ? 'w-[22px] h-[22px] text-[9px]' : 'w-[32px] h-[32px] text-[11px]'} rounded-full flex items-center justify-center font-bold flex-none shadow-sm`}
           style={{ 
-            backgroundColor: 'var(--color-surface-2)', 
-            color: 'var(--color-muted)',
+            backgroundColor: 'var(--color-accent-soft)', 
+            color: 'var(--color-accent)',
             border: '2px solid var(--color-surface)'
           }}
         >

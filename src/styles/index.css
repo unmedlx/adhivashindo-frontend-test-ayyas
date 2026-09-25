@@ -26,3 +26,19 @@
     letter-spacing: var(--letter-spacing);
   }
 }
+
+/* Ensure IonContent allows natural scrolling */
+ion-content {
+  --overflow: auto;
+  --overflow-y: auto;
+}
+
+.custom-toast {
+  --color: white;
+}
+
+.custom-toast::part(message) {
+  color: white;
+  text-align: center;
+  font-weight: 500;
+}

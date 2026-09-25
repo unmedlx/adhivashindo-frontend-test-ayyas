@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { IonToolbar, IonButton, IonSearchbar, IonIcon } from '@ionic/react';
-import { chevronDownOutline, filterOutline, swapVerticalOutline, lockClosedOutline } from 'ionicons/icons';
+import { chevronDownOutline, filterOutline, swapVerticalOutline, lockClosedOutline, personAddOutline } from 'ionicons/icons';
 import { useBoard } from '../../store/BoardProvider';
 import { useToast } from '../ui/Toast';
 import { MEMBERS } from '../../data/members';
@@ -44,7 +44,9 @@ export function TopNavbar() {
         '--color': 'var(--color-text)',
         paddingTop: 'env(safe-area-inset-top, 0px)',
         borderBottom: '1px solid var(--color-border)',
-        '--min-height': '58px',
+        '--min-height': '52px',
+        '--padding-top': '8px',
+        '--padding-bottom': '8px',
       } as React.CSSProperties}
     >
       <div
@@ -115,7 +117,8 @@ export function TopNavbar() {
               e.currentTarget.style.setProperty('--background', 'var(--color-surface-2)');
             }}
           >
-            + Invite
+            <IonIcon icon={personAddOutline} slot="start" style={{ marginRight: '6px', fontSize: '15px'}} />
+            Invite
           </IonButton>
         </div>
 

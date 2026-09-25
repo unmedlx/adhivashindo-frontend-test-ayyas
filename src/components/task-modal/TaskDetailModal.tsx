@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IonModal, IonButton, IonIcon, IonContent } from '@ionic/react';
-import { closeOutline, imageOutline } from 'ionicons/icons';
-import type { Task, ColumnId, LabelName, Priority } from '../../types/board.types';
+import { closeOutline, imageOutline, trashOutline } from 'ionicons/icons';
+import type { Task, ColumnId, LabelName, Priority, Member } from '../../types/board.types';
 import { useBoard } from '../../store/BoardProvider';
 import { useToast } from '../ui/Toast';
 import { MEMBERS } from '../../data/members';
@@ -36,6 +36,25 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
   }));
 
   const [isAssigneePopoverOpen, setIsAssigneePopoverOpen] = useState(false);
+  const assigneePopoverRef = useRef<HTMLDivElement>(null);
+  const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
+
+  // Close assignee popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (assigneePopoverRef.current && !assigneePopoverRef.current.contains(event.target as Node)) {
+        setIsAssigneePopoverOpen(false);
+      }
+    };
+
+    if (isAssigneePopoverOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isAssigneePopoverOpen]);
 
   // Reset edit buffer when modal opens with different task
   useEffect(() => {
@@ -107,10 +126,14 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
   };
 
   const toggleComplete = () => {
-    setEditBuffer(prev => ({
-      ...prev,
-      completed: !prev.completed,
-    }));
+    setEditBuffer(prev => {
+      const newCompleted = !prev.completed;
+      return {
+        ...prev,
+        completed: newCompleted,
+        columnId: newCompleted ? 'Done' : prev.columnId,
+      };
+    });
   };
 
   const updateField = <K extends keyof Task>(field: K, value: Task[K]) => {
@@ -136,9 +159,9 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
         .cover-drop:hover { border-color: var(--color-accent); color: var(--color-accent); }
         .field-title { font-size: 12px; color: var(--color-text); margin-bottom: 5px; font-weight: 700; letter-spacing: 0.3px; }
         .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px; }
-        .grid2 > div { background: var(--color-surface-1); border-radius: var(--radius-sm); padding: 5px 2px; border: 1px solid transparent; transition: border-color 0.12s; }
-        .grid2 select, .grid2 input:focus-within { border-color: var(--color-accent); }
-        .grid2 select, .grid2 input { width: 100%; border: none; background: var(--color-surface-2); color: var(--color-text); font-size: 13px; font-weight: 500; outline: none; font-family: inherit; border-radius: 5px; padding: 6px 8px; }
+        .grid2 > div { background: var(--color-surface-1); border-radius: var(--radius-sm); padding: 5px 2px; }
+        .grid2 select, .grid2 input { width: 100%; border: 1px solid var(--color-border); background: var(--color-surface-2); color: var(--color-text); font-size: 13px; font-weight: 500; outline: none; font-family: inherit; border-radius: 5px; padding: 6px 8px; transition: border-color 0.12s; }
+        .grid2 select:focus, .grid2 input:focus { border-color: var(--color-accent); }
         .assignee-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
         .add-av { width: 26px; height: 26px; border-radius: 50%; border: 1.5px dashed var(--color-muted-2); display: flex; align-items: center; justify-content: center; color: var(--color-muted); cursor: pointer; background: none; font-size: 15px; }
         .add-av:hover { border-color: var(--color-accent); color: var(--color-accent); }
@@ -168,6 +191,7 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
         #discardBtn { --border-radius: var(--radius-sm); --border-color: var(--color-border); --color: var(--color-muted); text-transform: none; font-weight: 600; }
         #saveBtn { --border-radius: var(--radius-sm); --background: var(--color-accent); --background-hover: var(--color-accent-2); text-transform: none; font-weight: 700; }
         .av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; flex: none; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+        .av .emoji-only { font-size: 16px; line-height: 1; display: block; font-weight: normal; }
         .priority-Low { color: var(--color-success); }
         .priority-Medium { color: var(--color-warn); }
         .priority-High { color: var(--color-danger); }
@@ -209,7 +233,7 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
               }
             }}
           >
-            {editBuffer.completed ? '✓ Mark Complete' : '✓ Mark Complete'}
+            {editBuffer.completed ? '✓ Completed' : '✓ Mark Complete'}
           </IonButton>
           <IonButton
             onClick={onDidDismiss}
@@ -341,25 +365,54 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
             {/* Assignees */}
             <div style={{ backgroundColor: 'var(--color-surface-1' }}>
               <div className="field-title">Assignee</div>
-              <div className="assignee-row member-pop">
+              <div className="assignee-row member-pop" ref={assigneePopoverRef}>
                 <div id="assigneeAvs" className="assignee-row">
-                  {editBuffer.assignees?.map((assigneeId) => {
-                    const member = MEMBERS.find(m => m.id === assigneeId);
-                    if (!member) return null;
+                  {(() => {
+                    const maxVisible = 5;
+                    const assignedMembers = editBuffer.assignees?.map(assigneeId => MEMBERS.find(m => m.id === assigneeId)).filter((member): member is Member => member !== undefined) || [];
+                    const visibleMembers = assignedMembers.slice(0, maxVisible);
+                    const remainingCount = assignedMembers.length - maxVisible;
+                    const shouldStack = assignedMembers.length > 1;
+
                     return (
-                      <div
-                        key={member.id}
-                        className="av"
-                        style={{ backgroundColor: member.color }}
-                        onClick={() => {
-                          updateField('assignees', editBuffer.assignees?.filter(id => id !== member.id) || []);
-                        }}
-                        title={member.name}
-                      >
-                        {member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                      </div>
+                      <>
+                        {visibleMembers.map((member, index) => (
+                          <div
+                            key={member.id}
+                            className="av"
+                            style={{ 
+                              backgroundColor: member.color,
+                              marginLeft: shouldStack && index > 0 ? '-8px' : '0',
+                              border: shouldStack ? '2px solid var(--color-surface)' : 'none',
+                              zIndex: shouldStack ? index : 'auto'
+                            }}
+                            onClick={() => {
+                              updateField('assignees', editBuffer.assignees?.filter(id => id !== member.id) || []);
+                            }}
+                            title={member.name}
+                          >
+                            {member.emoji ? <span className="emoji-only">{member.emoji}</span> : member.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </div>
+                        ))}
+                        {remainingCount > 0 && (
+                          <div
+                            className="av"
+                            style={{
+                              backgroundColor: 'var(--color-accent-soft)',
+                              color: 'var(--color-accent)',
+                              marginLeft: '-8px',
+                              border: '2px solid var(--color-surface)',
+                              zIndex: visibleMembers.length,
+                              cursor: 'default'
+                            }}
+                            title={`${remainingCount} more assignees`}
+                          >
+                            +{remainingCount}
+                          </div>
+                        )}
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
                 <button
                   className="add-av"
@@ -391,8 +444,8 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
                           checked={editBuffer.assignees?.includes(member.id)}
                           onChange={() => {}}
                         />
-                        <div className="av" style={{ backgroundColor: member.color, width: '24px', height: '24px', fontSize: '10px' }}>
-                          {member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        <div className="av" style={{ backgroundColor: member.color, width: '24px', height: '24px' }}>
+                          {member.emoji ? <span className="emoji-only" style={{ fontSize: '14px' }}>{member.emoji}</span> : member.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
                         </div>
                         <span>{member.name}</span>
                       </label>
@@ -526,8 +579,15 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
 
           {/* Checklist */}
           <div className="section">
-            <h4>Check List</h4>
-            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4>Check List</h4>
+              {editBuffer.checklist && editBuffer.checklist.length > 0 && (
+                <span style={{ fontSize: '12px', color: 'var(--color-muted)', fontWeight: 500 }}>
+                  {editBuffer.checklist.filter(item => item.done).length}/{editBuffer.checklist.length}
+                </span>
+              )}
+            </div>
+
             {/* Progress Bar */}
             {editBuffer.checklist && editBuffer.checklist.length > 0 && (
               <div className="chk-progress">
@@ -577,35 +637,70 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
               </div>
             )}
 
-            {/* Add Subtask Input */}
-            <div className="att-add">
-              <input
-                id="subInput"
-                type="text"
-                placeholder="Tambah subtask..."
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+            {/* Add Subtask */}
+            {!isAddSubtaskOpen ? (
+              <button
+                onClick={() => setIsAddSubtaskOpen(true)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px dashed var(--color-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--color-surface-2)',
+                  color: 'var(--color-text)',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'border-color 0.12s, color 0.12s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-accent)';
+                  e.currentTarget.style.color = 'var(--color-accent)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.color = 'var(--color-text)';
+                }}
+              >
+                + Add Subtask..
+              </button>
+            ) : (
+              <div className="att-add">
+                <input
+                  id="subInput"
+                  type="text"
+                  placeholder="Tambah subtask..."
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                      updateField('checklist', [
+                        ...(editBuffer.checklist || []),
+                        { id: newId(), text: e.currentTarget.value.trim(), done: false },
+                      ]);
+                      e.currentTarget.value = '';
+                    }
+                  }}
+                  onBlur={() => {
+                    // Optional: close form when focus is lost
+                    setTimeout(() => setIsAddSubtaskOpen(false), 200);
+                  }}
+                />
+                <IonButton size="small" id="addSubBtn" onClick={() => {
+                  const input = document.getElementById('subInput') as HTMLInputElement;
+                  if (input?.value.trim()) {
                     updateField('checklist', [
                       ...(editBuffer.checklist || []),
-                      { id: newId(), text: e.currentTarget.value.trim(), done: false },
+                      { id: newId(), text: input.value.trim(), done: false },
                     ]);
-                    e.currentTarget.value = '';
+                    input.value = '';
+                    setIsAddSubtaskOpen(false);
                   }
-                }}
-              />
-              <IonButton size="small" id="addSubBtn" onClick={() => {
-                const input = document.getElementById('subInput') as HTMLInputElement;
-                if (input?.value.trim()) {
-                  updateField('checklist', [
-                    ...(editBuffer.checklist || []),
-                    { id: newId(), text: input.value.trim(), done: false },
-                  ]);
-                  input.value = '';
-                }
-              }}>
-                Add
-              </IonButton>
-            </div>
+                }} style={{ textTransform: 'none' }}>
+                  Add
+                </IonButton>
+              </div>
+            )}
           </div>
 
           {/* Activity Log */}
@@ -640,7 +735,7 @@ export function TaskDetailModal({ isOpen, onDidDismiss, task, columnId }: TaskDe
             className="danger-btn"
             fill="clear"
           >
-            Delete
+            <IonIcon icon={trashOutline} />
           </IonButton>
         )}
         {!isEditMode && <div />}

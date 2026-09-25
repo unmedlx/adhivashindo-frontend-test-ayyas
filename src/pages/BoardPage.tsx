@@ -36,8 +36,10 @@ function BoardPage() {
       <IonHeader className="ion-no-border">
         <TopNavbar />
       </IonHeader>
-      <IonContent className="ion-no-padding">
-        <BoardCanvas onTaskClick={openTaskModal} onAddTask={openTaskModal} />
+      <IonContent className="ion-no-padding" scrollY={true}>
+        <div style={{ marginTop: '5px' }}>
+          <BoardCanvas onTaskClick={openTaskModal} onAddTask={openTaskModal} />
+        </div>
       </IonContent>
 
       <TaskDetailModal

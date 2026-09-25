@@ -8,6 +8,7 @@ export interface Member {
   id: string;
   name: string;
   color: string;
+  emoji?: string; // Profession emoji for avatar
 }
 
 export interface ChecklistItem {

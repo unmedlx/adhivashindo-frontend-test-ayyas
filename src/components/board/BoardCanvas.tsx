@@ -36,8 +36,6 @@ export function BoardCanvas({ onTaskClick, onAddTask }: BoardCanvasProps) {
         gap: '16px',
         padding: '16px',
         overflowX: 'auto',
-        overflowY: 'hidden',
-        height: 'calc(100vh - 58px)', // Subtract navbar height
         alignItems: 'flex-start',
         backgroundColor: 'var(--color-bg)',
         // Ensure smooth scrolling on mobile

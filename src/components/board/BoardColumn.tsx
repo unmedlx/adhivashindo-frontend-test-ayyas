@@ -1,5 +1,7 @@
 import type { Task, ColumnId } from '../../types/board.types';
 import type { DragEvent } from 'react';
+import { IonIcon } from '@ionic/react';
+import { ellipsisVertical, chevronDownOutline } from 'ionicons/icons';
 import TaskCard from './TaskCard';
 
 interface BoardColumnProps {
@@ -39,7 +41,6 @@ export function BoardColumn({ columnId, tasks, onDrop, onTaskClick, onAddTask }:
         padding: '6px',
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: '100%',
       }}
     >
       {/* Column Header */}
@@ -57,36 +58,53 @@ export function BoardColumn({ columnId, tasks, onDrop, onTaskClick, onAddTask }:
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span>{columnId}</span>
-              <button
-                onClick={handleAddTask}
-                style={{
-                  backgroundColor: 'var(--color-accent-soft)',
+          <button
+            onClick={handleAddTask}
+            style={{
+              backgroundColor: 'var(--color-accent-soft)',
               borderRadius: '8px',
               padding: '4px 8px',
               fontSize: '16px',
-                  border: 'none',
-                  color: 'var(--color-accent)',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  
-                }}
-                title="Add task"
-              >
-                +
-              </button>
-          {/* <span
-            style={{
-              backgroundColor: 'var(--color-muted-2)',
-              borderRadius: '12px',
-              padding: '2px 8px',
-              fontSize: '11px',
-              fontWeight: 500,
-              textAlign: 'right'
+              border: 'none',
+              color: 'var(--color-accent)',
+              cursor: 'pointer',
+              fontWeight: 600,
             }}
+            title="Add task"
           >
-            {tasks.length}
-          </span> */}
+            +
+          </button>
+          <button
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: 'var(--color-muted)',
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="Edit column"
+          >
+            <IonIcon icon={ellipsisVertical} style={{ fontSize: '20px' }} />
+          </button>
         </div>
+        <button
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: 'var(--color-muted)',
+            cursor: 'pointer',
+            padding: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title="Expand"
+        >
+          <IonIcon icon={chevronDownOutline} style={{ fontSize: '20px' }} />
+        </button>
       </div>
 
       {/* Task Cards */}
@@ -97,8 +115,6 @@ export function BoardColumn({ columnId, tasks, onDrop, onTaskClick, onAddTask }:
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
-          overflowY: 'auto',
-          flex: 1,
         }}
       >
         {tasks.map((task) => (

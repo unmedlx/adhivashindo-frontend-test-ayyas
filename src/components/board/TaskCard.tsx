@@ -1,6 +1,6 @@
 import type { Task } from '../../types/board.types';
 import type { MouseEvent, DragEvent } from 'react';
-import { calendarOutline, attachOutline } from 'ionicons/icons';
+import { attachOutline, timeOutline } from 'ionicons/icons';
 import { IonIcon } from '@ionic/react';
 import LabelBadge from '../ui/LabelBadge';
 import ProgressBar from '../ui/ProgressBar';
@@ -20,6 +20,14 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
     : 0;
 
   const assignees = MEMBERS.filter(member => task.assignees.includes(member.id));
+
+  // Format date to "d MMM" format (e.g., "1 Aug")
+  const formatDueDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    return `${day} ${month}`;
+  };
 
   const handleCardClick = () => {
     if (onClick) {
@@ -134,24 +142,29 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
           borderTop: '1px solid var(--color-border)',
         }}
       >
-        {/* Due Date */}
-        {task.dueDate && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '11px',
-              color: 'var(--color-muted)',
-            }}
-          >
-            <IonIcon icon={calendarOutline} style={{ fontSize: '12px' }} />
-            <span>{task.dueDate}</span>
-          </div>
-        )}
+        {/* Due Date & Attachments */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Due Date */}
+          {task.dueDate && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.3px',
+                backgroundColor: 'var(--label-feature-bg)',
+                color: 'var(--label-feature-text)',
+                borderRadius: '4px',
+                padding: '2px 8px',
+              }}
+            >
+              <IonIcon icon={timeOutline} style={{ fontSize: '12px' }} />
+              <span>{formatDueDate(task.dueDate)}</span>
+            </div>
+          )}
 
-        {/* Attachments & Assignees */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {/* Attachment Count */}
           {task.attachments.length > 0 && (
             <div
@@ -167,10 +180,10 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
               <span>{task.attachments.length}</span>
             </div>
           )}
-
-          {/* Assignee Avatars */}
-          <AvatarStack members={assignees} maxVisible={3} size="small" />
         </div>
+
+        {/* Assignee Avatars */}
+        <AvatarStack members={assignees} maxVisible={3} size="small" />
       </div>
     </div>
   );
