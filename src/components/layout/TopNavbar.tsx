@@ -1,17 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IonToolbar, IonButton, IonSearchbar, IonIcon } from '@ionic/react';
 import { chevronDownOutline, filterOutline, swapVerticalOutline, lockClosedOutline, personAddOutline } from 'ionicons/icons';
 import { useBoard } from '../../store/BoardProvider';
 import { useToast } from '../ui/Toast';
 import { MEMBERS } from '../../data/members';
 import AvatarStack from '../ui/AvatarStack';
-import FilterPanel from '../filters/FilterPanel';
 
-export function TopNavbar() {
+interface TopNavbarProps {
+  isFilterPanelOpen: boolean;
+  setIsFilterPanelOpen: (open: boolean) => void;
+  onFilterButtonPosition?: (position: { top: number; left: number }) => void;
+}
+
+export function TopNavbar({ isFilterPanelOpen, setIsFilterPanelOpen, onFilterButtonPosition }: TopNavbarProps) {
   const { setSearch } = useBoard();
   const { showToast } = useToast();
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const filterButtonRef = useRef<HTMLIonButtonElement>(null);
 
   // Debounced search
   useEffect(() => {
@@ -37,6 +42,48 @@ export function TopNavbar() {
     setSearchValue(e.detail.value as string);
   };
 
+  // Calculate filter button position for panel placement
+  useEffect(() => {
+    const calculatePosition = () => {
+      if (filterButtonRef.current && onFilterButtonPosition) {
+        const rect = filterButtonRef.current.getBoundingClientRect();
+        const panelWidth = 250; // Panel width from FilterPanel
+        const viewportWidth = window.innerWidth;
+
+        // Calculate left position (align with button left edge)
+        let left = rect.left;
+
+        // Ensure panel doesn't go outside viewport on the right side
+        if (left + panelWidth > viewportWidth) {
+          left = viewportWidth - panelWidth - 16; // 16px padding from right edge
+        }
+
+        // Ensure panel doesn't go outside viewport on the left side
+        if (left < 16) {
+          left = 16; // 16px padding from left edge
+        }
+
+        onFilterButtonPosition({
+          top: rect.bottom + 8, // 8px gap below button
+          left: left
+        });
+      }
+    };
+
+    if (isFilterPanelOpen) {
+      calculatePosition();
+
+      // Recalculate on window resize and scroll
+      window.addEventListener('resize', calculatePosition);
+      window.addEventListener('scroll', calculatePosition);
+
+      return () => {
+        window.removeEventListener('resize', calculatePosition);
+        window.removeEventListener('scroll', calculatePosition);
+      };
+    }
+  }, [isFilterPanelOpen, onFilterButtonPosition]);
+
   return (
     <IonToolbar
       style={{
@@ -47,6 +94,7 @@ export function TopNavbar() {
         '--min-height': '52px',
         '--padding-top': '8px',
         '--padding-bottom': '8px',
+        zIndex: 0,
       } as React.CSSProperties}
     >
       <div
@@ -132,12 +180,12 @@ export function TopNavbar() {
           }}
         >
           {/* Filter button */}
-          <div style={{ position: 'relative' }}>
-            <IonButton
-              fill="solid"
-              onClick={handleFilterClick}
-              style={{
-                 '--border-radius': '8px',
+          <IonButton
+            ref={filterButtonRef}
+            fill="solid"
+            onClick={handleFilterClick}
+            style={{
+               '--border-radius': '8px',
               '--background': 'var(--color-surface-1)',
               '--color': 'var(--color-text)',
               '--box-shadow': 'none',
@@ -148,19 +196,16 @@ export function TopNavbar() {
               textTransform: 'none',
               height: '30px',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.setProperty('--background', 'var(--color-accent-soft)');
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.setProperty('--background', 'var(--color-surface-1)');
-              }}
-            >
-              <IonIcon icon={filterOutline} slot="start" style={{ marginRight: '6px' }} />
-              Filter
-            </IonButton>
-            
-            <FilterPanel isOpen={isFilterPanelOpen} onClose={() => setIsFilterPanelOpen(false)} />
-          </div>
+            onMouseEnter={(e) => {
+              e.currentTarget.style.setProperty('--background', 'var(--color-accent-soft)');
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.setProperty('--background', 'var(--color-surface-1)');
+            }}
+          >
+            <IonIcon icon={filterOutline} slot="start" style={{ marginRight: '6px' }} />
+            Filter
+          </IonButton>
 
           {/* Export/Import button */}
           <IonButton

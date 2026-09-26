@@ -31,7 +31,7 @@ export function BoardCanvas({ onTaskClick, onAddTask }: BoardCanvasProps) {
   return (
     <div
       style={{
-
+        zIndex: 0,
         display: 'flex',
         flexDirection: 'row',
         gap: '16px',

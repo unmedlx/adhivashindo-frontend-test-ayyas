@@ -4,12 +4,15 @@ import { addOutline } from 'ionicons/icons';
 import BoardCanvas from '../components/board/BoardCanvas';
 import TopNavbar from '../components/layout/TopNavbar';
 import TaskDetailModal from '../components/task-modal/TaskDetailModal';
+import FilterPanel from '../components/filters/FilterPanel';
 import type { Task, ColumnId } from '../types/board.types';
 
 function BoardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [newTaskColumnId, setNewTaskColumnId] = useState<ColumnId | undefined>();
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [filterPanelPosition, setFilterPanelPosition] = useState({ top: 70, left: 100 });
 
   const openTaskModal = (task?: Task | ColumnId, columnId?: ColumnId) => {
     // Handle both task object and columnId string
@@ -33,11 +36,15 @@ function BoardPage() {
 
   return (
     <>
-      <IonHeader className="ion-no-border">
-        <TopNavbar />
+      <IonHeader className="ion-no-border" style={{overflow: 'visible'}}>
+        <TopNavbar
+          isFilterPanelOpen={isFilterPanelOpen}
+          setIsFilterPanelOpen={setIsFilterPanelOpen}
+          onFilterButtonPosition={setFilterPanelPosition}
+        />
       </IonHeader>
       <IonContent className="ion-no-padding" scrollY={true}>
-        <div style={{ marginTop: '5px' }}>
+        <div style={{ marginTop: '5px', zIndex: 0 }}>
           <BoardCanvas onTaskClick={openTaskModal} onAddTask={openTaskModal} />
         </div>
       </IonContent>
@@ -57,6 +64,13 @@ function BoardPage() {
           <IonIcon icon={addOutline} />
         </IonFabButton>
       </IonFab>
+
+      {/* FilterPanel at page level to avoid Ionic component stacking issues */}
+      <FilterPanel
+        isOpen={isFilterPanelOpen}
+        onClose={() => setIsFilterPanelOpen(false)}
+        position={filterPanelPosition}
+      />
     </>
   );
 }

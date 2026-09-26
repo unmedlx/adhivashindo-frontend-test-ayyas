@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IonButton } from '@ionic/react';
 import { useBoard } from '../../store/BoardProvider';
 import { MEMBERS } from '../../data/members';
@@ -8,13 +8,15 @@ import type { LabelName } from '../../types/board.types';
 interface FilterPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  position?: { top: number; left: number };
 }
 
-export function FilterPanel({ isOpen }: FilterPanelProps) {
+export function FilterPanel({ isOpen, onClose, position = { top: 70, left: 100 } }: FilterPanelProps) {
   const { state, setFilters } = useBoard();
   const [localAssignees, setLocalAssignees] = useState<Set<string>>(() => new Set(state.filters.assignees));
   const [localLabels, setLocalLabels] = useState<Set<string>>(() => new Set(state.filters.labels));
   const [localDate, setLocalDate] = useState(state.filters.date);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Sync local state with store state when panel opens
   useEffect(() => {
@@ -23,7 +25,24 @@ export function FilterPanel({ isOpen }: FilterPanelProps) {
       setLocalLabels(new Set(state.filters.labels));
       setLocalDate(state.filters.date);
     }
-  }, [isOpen, state.filters.assignees, state.filters.labels, state.filters.date]);  
+  }, [isOpen, state.filters.assignees, state.filters.labels, state.filters.date]);
+
+  // Close panel when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);  
 
   const handleAssigneeToggle = (assigneeId: string) => {
     const newAssignees = new Set(localAssignees);
@@ -64,11 +83,12 @@ export function FilterPanel({ isOpen }: FilterPanelProps) {
 
   return (
     <div
+      ref={panelRef}
       style={{
-        position: 'absolute',
-        top: '46px',
-        right: 0,
-        zIndex: 50,
+        position: 'fixed',
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        zIndex: 9999,
         background: 'var(--color-surface)',
         border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-md)',
